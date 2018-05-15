@@ -198,6 +198,12 @@ class NginxInstallationAndConfig(object):
 
     #PHP-GeoIP config
     def setPhpGeoIpConfig(self):
+        p0 = subprocess.check_call("yum install php-pecl-geoip -y", shell = True)
+        p1 = subprocess.check_call("rm -f /usr/share/GeoIP/GeoIP.dat", shell = True)
+        p2 = subprocess.check_call("cd /usr/share/GeoIP", shell = True)
+        p3 = subprocess.check_call("wget http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz", shell = True)
+        p4 = subprocess.check_call("gunzip GeoIP.dat.gz", shell = True)
+        p5 = subprocess.check_call("cd ~", shell = True)
         return
 
     #Set rutorrent password
@@ -206,3 +212,4 @@ class NginxInstallationAndConfig(object):
         p0 = subprocess.check_call(["htpasswd", "-cb", "/etc/nginx/rtpass", username, password])
         return
 
+#Start Nginx and php-fpm
