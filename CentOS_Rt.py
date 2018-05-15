@@ -178,3 +178,31 @@ class NginxInstallationAndConfig(object):
     def installRelatedDependency(self):
         p2 = subprocess.check_call("yum install -y php-fpm httpd-tools php-cgi php-cli curl", shell = True)
         return
+
+    #Nginx config file set
+    def setNginxConfigFile(self):
+        #Go to nginx config directory
+        p0 = subprocess.check_call("cd /etc/nginx/", shell = True)
+        #Get from githun
+        try:
+            p1 = subprocess.check_call("wget https://github.com/GalaxyXL/SeedBox_CentOS/raw/master/conf/nginx.conf -O nginx.conf", shell = True)
+        except:
+            print "Error Nginx config file"
+            exit(1)
+        return
+
+    #Php-fpm config file set
+    def setPhpFpmConfig(self):
+        p0 = subprocess.check_call("sed -i \"s/apache/rtuser/g\" /etc/php-fpm.d/www.conf", shell = True)
+        return
+
+    #PHP-GeoIP config
+    def setPhpGeoIpConfig(self):
+        return
+
+    #Set rutorrent password
+    def setPassWordForRutorrent(self, password):
+        #Creat password file
+        p0 = subprocess.check_call(["htpasswd", "-cb", "/etc/nginx/rtpass", username, password])
+        return
+
