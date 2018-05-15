@@ -132,5 +132,3 @@ class NginxInstallationAndConfig(object):
     def installRelatedDependency(self):
         p2 = subprocess.check_call("yum install -y php-fpm httpd-tools php-cgi php-cli curl", shell = True)
         return
-
-    
