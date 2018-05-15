@@ -116,6 +116,52 @@ class RtorrentRunningVerification(object):
         p3 = subprocess.check_call(["pkill", "rtorrent"])
         return
 
+#Get config file for rtorrent
+class RtorrentConfig(object):
+    #Initial funcition
+    def __init__(self):
+        return
+
+    #Creat rtorrent user
+    def creatUserForRtorrent(self):
+        global username
+        username = "rtuser"
+        p0 = subprocess.check_call(["adduser", username])
+        return
+
+    #Creat session and download directory
+    def mkdirSessionAndDownload(self):
+        p0 = subprocess.check_call("mkdir /home/" + username + "/.session", shell = True)
+        p1 = subprocess.check_call("mkdir /home/" + username + "/rtdownloads", shell = True)
+        p2 = subprocess.check_call("chmod -R 777 /home/" + username + "/.session", shell = True)
+        return
+
+    #Get config file from github
+    def getConfigFileFromWeb(self):
+        #Go to home directory
+        p0 = subprocess.call("cd ~", shell = True)
+        #Get File
+        try:
+            p1 = subprocess.check_call("wget https://github.com/GalaxyXL/SeedBox_CentOS/raw/master/conf/rtorrent.rc", shell = True)
+        except:
+            print "error"
+        
+        #Change file content and name
+        p2 = subprocess.check_call("sed -i \"s/<username>/" + username + "/g\" rtorrent.rc", shell = True)
+        p3 = subprocess.check_call(["mv", "rtorrent.rc", "/home/" + username + "/.rtorrent.rc"])
+        return
+
+#Start rtorrent under rtuser
+class RunningRtorrent(object):
+    #Initial function
+    def __init__(self):
+        return
+    
+    #Start rtorrent under rtuser
+    def startRtorrent(self):
+        p0 = subprocess.check_call("sudo -u rtuser screen -dmS rtorrent /usr/local/bin/rtorrent", shell = True)
+        return
+    
 #Install Nginx and related dependency and set config file
 class NginxInstallationAndConfig(object):
     #Initial function

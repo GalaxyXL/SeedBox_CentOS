@@ -23,13 +23,13 @@ throttle.global_up.max_rate.set_kb = 0
 
 # Default directory to save the downloaded torrents.
 #
-directory.default.set = ./
+directory.default.set = /home/<username>/rtdownloads
 
 # Default session directory. Make sure you don't run multiple instance
 # of rtorrent using the same session directory. Perhaps using a
 # relative path?
 #
-session.path.set = ./session
+session.path.set = /home/<username>/.session
 
 # Watch a directory for new torrents, and stop those that have been
 # deleted.
