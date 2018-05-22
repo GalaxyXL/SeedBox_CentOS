@@ -204,7 +204,10 @@ class NginxInstallationAndConfig(object):
         p3 = subprocess.check_call("wget http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz", shell = True)
         p4 = subprocess.check_call("gunzip GeoIP.dat.gz", shell = True)
         p5 = subprocess.check_call("cd ~", shell = True)
-        return
+
+
+fahiofh
+asfhjk
 
     #Set rutorrent password
     def setPassWordForRutorrent(self, password):
