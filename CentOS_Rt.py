@@ -61,8 +61,6 @@ class ConfigureAndCompileLibtorrent(object):
     #Go to libtorrent directory
     def goToLibtorrentDirectory(self):
         #Go to the libtorrent source code directory
-        #p1 = subprocess.check_call(["cd", "~"], shell = False)
-        #p2 = subprocess.check_call(["cd", "libtorrent"], shell = False)
         os.chdir("/root/libtorrent")
         return
         
@@ -100,8 +98,6 @@ class ConfigureAndCompileRtorrent(ConfigureAndCompileLibtorrent):
     #Rewrite the method of go to
     def goToLibtorrentDirectory(self):
         #Go to the rtorrent directory
-        #p1 = subprocess.check_call(["cd", "~"])
-        #p2 = subprocess.check_call(["cd", "rtorrent"])
         os.chdir("/root/rtorrent")
         return
 
@@ -229,9 +225,6 @@ class NginxInstallationAndConfig(object):
 
     #Nginx config file set
     def setNginxConfigFile(self):
-        #Go to nginx config directory
-        #os.chdir("/etc/nginx/")
-        #Get from githun
         try:
             os.chdir("/etc/nginx")
             os.system("wget https://github.com/GalaxyXL/SeedBox_CentOS/raw/master/conf/nginx.conf -O nginx.conf")
@@ -296,15 +289,75 @@ class NginxInstallationAndConfig(object):
             print "Rutorrent plugin install error"
         return
 
+class installQbittorrent(object):
+    def __init__(self):
+        os.chdir("/root")
+        #self.installDependency()
+        #self.getLibtorrentRasterbar()
+        #self.configureLibtorrentRasterbar()
+        self.getQbittorrent()
+        self.configureQbittorrent()
+        self.openPort()
+        return
+
+    #Install qt5 and development tools
+    def installDependency(self):
+        subprocess.check_output("yum -y groupinstall \"Development Tools\"", shell = True)
+        subprocess.check_output("yum -y install qt-devel boost-devel openssl-devel qt5-qtbase-devel qt5-linguist", shell = True)
+        return
+
+    #Get libtorrent-rasterbar from web
+    def getLibtorrentRasterbar(self):
+        try:
+            subprocess.check_call("wget https://github.com/arvidn/libtorrent/releases/download/libtorrent-1_1_5/libtorrent-rasterbar-1.1.5.tar.gz", shell = True)
+            subprocess.check_call("tar xf libtorrent-rasterbar-1.1.5.tar.gz", shell = True)
+        except:
+            print "Get libtorrent-rasterbar error"
+        return
+        
+    #configure and compile libtorrent-rasterbar
+    def configureLibtorrentRasterbar(self):
+        os.chdir("/root/libtorrent-rasterbar-1.1.5")
+        os.system("./configure --disable-debug --prefix=/usr CXXFLAGS=-std=c++11")
+        os.system("make")
+        os.system("make install")
+
+        #establish soft link
+        subprocess.check_call("ln -s /usr/lib/pkgconfig/libtorrent-rasterbar.pc /usr/lib64/pkgconfig/libtorrent-rasterbar.pc", shell = True)
+        subprocess.check_call("ln -s /usr/lib/libtorrent-rasterbar.so.9 /usr/lib64/libtorrent-rasterbar.so.9", shell = True)
+        os.chdir("/root")
+        return
+
+    #Get qbittorrent from web
+    def getQbittorrent(self):
+        try:
+            subprocess.check_call("wget https://github.com/qbittorrent/qBittorrent/archive/release-4.0.4.tar.gz", shell = True)
+            subprocess.check_call("tar xf release-4.0.4.tar.gz", shell = True)
+        except:
+            print "Get Qbittorrent error"
+        return
+
+    #Configure and compile qbittorrent
+    def configureQbittorrent(self):
+        os.chdir("qBittorrent-release-4.0.4")
+        os.system("./configure --disable-debug --prefix=/usr --disable-gui CPPFLAGS=-I/usr/include/qt5  CXXFLAGS=-std=c++11")
+        os.system("make")
+        os.system("make install")
+        os.chdir("/root")
+        print "qbittorrent install complete"
+        return
+
+    #Open port
+    def openPort(self):
+        subprocess.check_call("iptables -I INPUT -p tcp --dport 8080 -j ACCEPT", shell = True)
+        subprocess.check_call("iptables -I INPUT -p tcp --dport 8999 -j ACCEPT", shell = True)
+        return
+            
+
+
+
 def main():
-    #DependencyInstall()
-    #GitCloneSourceCode()
-    ConfigureAndCompileLibtorrent()
-    ConfigureAndCompileRtorrent()
-    RtorrentConfig()
-    RtorrentRunningVerification()
-    RunningRtorrent()
-    NginxInstallationAndConfig()
+    installQbittorrent()
 
 if __name__ == "__main__": main()
 
