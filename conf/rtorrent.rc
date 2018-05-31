@@ -29,7 +29,7 @@ directory.default.set = /home/<username>/rtdownloads
 # of rtorrent using the same session directory. Perhaps using a
 # relative path?
 #
-session.path.set = /home/<username>/.session
+session.path.set = /.session
 
 # Watch a directory for new torrents, and stop those that have been
 # deleted.
