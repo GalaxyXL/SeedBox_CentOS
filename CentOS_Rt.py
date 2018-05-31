@@ -1,9 +1,12 @@
 #CentOS 7.2 Integrate rtorrent installation
+import os
 import subprocess
 
 httpfolder = "/usr/share/nginx/html/"
 rtorrentuser = "rtuser"
 password = "user_input"
+new_env = os.environ.copy()
+new_env['PKG_CONFIG_PATH'] = "/usr/local/lib/pkgconfig"
 
 #Install dependency of rtorrent
 class DependencyInstall(object):
@@ -14,10 +17,10 @@ class DependencyInstall(object):
 
     #system dependency installation
     def installSystemDependency(self):
-        p1 = subprocess.check_call(["yum","groupinstall","-y","Development Tools"], shell = 'False')
+        p1 = subprocess.check_call(["yum","groupinstall","-y","Development Tools"], shell = False)
         p2 = subprocess.check_call(["yum", "install", "-y", "cppunit-devel", "libtool", "zlib-devel", \
         "gawk", "libsigc++20-devel", "openssl-devel", "ncurses-devel", "libcurl-devel", \
-        "xmlrpc-c-devel", "unzip", "screen"], shell = 'False')
+        "xmlrpc-c-devel", "unzip", "screen"], shell = False)
         return
     
 #Get source code frome Github
@@ -31,7 +34,7 @@ class GitCloneSourceCode(object):
     #Get libtorrent from Github
     def getLibtorrent(self):
         try:
-            p1 = subprocess.check_call(["git", "clone", "https://github.com/rakshasa/libtorrent"], shell = 'False')
+            p1 = subprocess.check_call(["git", "clone", "https://github.com/rakshasa/libtorrent"], shell = False)
         except:
             print "Get libtorrent error"
             exit(1)
@@ -40,7 +43,7 @@ class GitCloneSourceCode(object):
     #Get rtorrent from Github
     def getRtorrent(self):
         try:
-            p1 = subprocess.check_call(["git", "clone", "https://github.com/rakshasa/rtorrent"], shell = 'False')
+            p1 = subprocess.check_call(["git", "clone", "https://github.com/rakshasa/rtorrent"], shell = False)
         except:
             print "Get rtorrent error"
             exit(1)
@@ -58,20 +61,21 @@ class ConfigureAndCompileLibtorrent(object):
     #Go to libtorrent directory
     def goToLibtorrentDirectory(self):
         #Go to the libtorrent source code directory
-        p1 = subprocess.check_call(["cd", "~"], shell = 'False')
-        p2 = subprocess.check_call(["cd", "libtorrent"], shell = 'False')
+        #p1 = subprocess.check_call(["cd", "~"], shell = False)
+        #p2 = subprocess.check_call(["cd", "libtorrent"], shell = False)
+        os.chdir("/root/libtorrent")
         return
         
     #Configure Makefile
     def configureMakefile(self):
         #autogen and check
-        output1 = subprocess.check_output(["./autogen.sh"]).decode('utf-8')
+        output1 = subprocess.check_output(["/root/libtorrent/autogen.sh"]).decode('utf-8')
         if "ready to configure" not in output1:
             print "autogen error"
             exit(1)
         
         #configure and check
-        output2 = subprocess.check_output(["./configure", "--disable-debug"]).decode('utf-8')
+        output2 = subprocess.check_output(["/root/libtorrent/configure", "--disable-debug"]).decode('utf-8')
         if "executing depfiles commands" not in output2:
             print "configure error"
             exit(1)
@@ -80,7 +84,7 @@ class ConfigureAndCompileLibtorrent(object):
     #Compile libtorrent
     def compileLibtorrent(self):
         #Compile and check
-        output3 = subprocess.check_output(["make", "-j$(nproc)"]).decode('utf-8')
+        output3 = subprocess.check_output("make", shell = True).decode('utf-8')
         if "Error" in output3:
             print "Compilation error"
             exit(1)
@@ -88,7 +92,7 @@ class ConfigureAndCompileLibtorrent(object):
         #Installation
         p3 = subprocess.check_call(["make", "install"])
         #Go back home
-        p4 = subprocess.check_call(["cd", "~"])
+        p4 = os.chdir("/root")
         return
 
 #Configure and Compile rbtorrent
@@ -96,19 +100,20 @@ class ConfigureAndCompileRtorrent(ConfigureAndCompileLibtorrent):
     #Rewrite the method of go to
     def goToLibtorrentDirectory(self):
         #Go to the rtorrent directory
-        p1 = subprocess.check_call(["cd", "~"])
-        p2 = subprocess.check_call(["cd", "rtorrent"])
+        #p1 = subprocess.check_call(["cd", "~"])
+        #p2 = subprocess.check_call(["cd", "rtorrent"])
+        os.chdir("/root/rtorrent")
         return
 
     #Configure Makefile
     def configureMakefile(self):
         #autogen and check
-        output1 = subprocess.check_output(["./autogen.sh"]).decode('utf-8')
+        output1 = subprocess.check_output(["/root/rtorrent/autogen.sh"]).decode('utf-8')
         if "ready to configure" not in output1:
             exit(1)
         
         #configure and check
-        output2 = subprocess.check_output(["./configure", "--with-xmlrpc-c", "--with-ncurses", "--enable-ipv6", "--disable-debug"]).decode('utf-8')
+        output2 = subprocess.check_output(["/root/rtorrent/configure", "--with-xmlrpc-c", "--with-ncurses", "--enable-ipv6", "--disable-debug"], env = new_env).decode('utf-8')
         if "executing depfiles commands" not in output2:
             exit(2)
         return
@@ -158,9 +163,9 @@ class RtorrentConfig(object):
 
     #Creat session and download directory
     def mkdirSessionAndDownload(self):
-        p0 = subprocess.check_call("mkdir /home/" + username + "/.session", shell = True)
+        p0 = subprocess.check_call("mkdir /.session", shell = True)
         p1 = subprocess.check_call("mkdir /home/" + username + "/rtdownloads", shell = True)
-        p2 = subprocess.check_call("chmod -R 777 /home/" + username + "/.session", shell = True)
+        p2 = subprocess.check_call("chmod -R 777 /.session", shell = True)
         return
 
     #Get config file from github
@@ -180,8 +185,8 @@ class RtorrentConfig(object):
 
     #Firewall port setting
     def openPort(self):
-        p0 = subprocess.check_call("firewall-cmd --permanent --add-port=53698/tcp")
-        p0 = subprocess.check_call("firewall-cmd --reload")
+        p0 = subprocess.check_call("iptables -I INPUT -p tcp --dport 53698 -j ACCEPT", shell = True)
+        p0 = subprocess.check_call("iptables -I INPUT -p tcp --dport 80 -j ACCEPT", shell = True)
         return
 
 #Start rtorrent under rtuser
@@ -208,6 +213,7 @@ class NginxInstallationAndConfig(object):
         self.setPassWordForRutorrent(password)
         self.getRutorrent()
         self.getRutorrentPlugin()
+        self.startNginxAndPhpFpm()
         return
 
     #Install Nginx from epel-release
@@ -224,10 +230,11 @@ class NginxInstallationAndConfig(object):
     #Nginx config file set
     def setNginxConfigFile(self):
         #Go to nginx config directory
-        p0 = subprocess.check_call("cd /etc/nginx/", shell = True)
+        #os.chdir("/etc/nginx/")
         #Get from githun
         try:
-            p1 = subprocess.check_call("wget https://github.com/GalaxyXL/SeedBox_CentOS/raw/master/conf/nginx.conf -O nginx.conf", shell = True)
+            os.chdir("/etc/nginx")
+            os.system("wget https://github.com/GalaxyXL/SeedBox_CentOS/raw/master/conf/nginx.conf -O nginx.conf")
         except:
             print "Error Nginx config file"
             exit(1)
@@ -258,13 +265,12 @@ class NginxInstallationAndConfig(object):
     def startNginxAndPhpFpm(self):
         try:
             p0 = subprocess.check_output("systemctl start nginx.service", shell = True)
-            p1 = subprocess.check_call("systemctl enable nginx.service")
+            p1 = subprocess.check_call("systemctl enable nginx.service", shell = True)
         except:
             print "Start Nginx Error"
             exit(1)
         try:
-            p2 = subprocess.check_output("systemctl start php-fpm.service")
-            p1 = subprocess.check_call("systemctl enable nginx.service")
+            p2 = subprocess.check_output("php-fpm -D", shell = True)
         except:
             print "Start Php-Fpm Error"
             exit(1)
@@ -276,7 +282,7 @@ class NginxInstallationAndConfig(object):
             p0 = subprocess.check_call("git clone https://github.com/Novik/ruTorrent.git " + httpfolder + "rutorrent", shell = True)
         except:
             print "Download Rutorrent Error"
-        p1 = subprocess.check_call("chown " + rtorrentuser + " -R /usr/share/nginx/html/rutorrent/share")
+        p1 = subprocess.check_call("chown " + rtorrentuser + " -R /usr/share/nginx/html/rutorrent/share", shell = True)
         return
     
     #Rutorrent plugin
@@ -285,14 +291,20 @@ class NginxInstallationAndConfig(object):
             p0 = subprocess.check_call("rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7", shell = True)
             p0 = subprocess.check_call("rpm --import http://li.nux.ro/download/nux/RPM-GPG-KEY-nux.ro", shell = True)
             p0 = subprocess.check_call("rpm -Uvh http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-1.el7.nux.noarch.rpm", shell = True)
-            p1 = subprocess.check_call("yum install ffmpeg unzip mediainfo rar unrar sox", shell = True)
+            p1 = subprocess.check_call("yum install -y ffmpeg unzip mediainfo rar unrar sox", shell = True)
         except:
             print "Rutorrent plugin install error"
         return
 
+def main():
+    #DependencyInstall()
+    #GitCloneSourceCode()
+    ConfigureAndCompileLibtorrent()
+    ConfigureAndCompileRtorrent()
+    RtorrentConfig()
+    RtorrentRunningVerification()
+    RunningRtorrent()
+    NginxInstallationAndConfig()
 
-
-
-    
-
+if __name__ == "__main__": main()
 
