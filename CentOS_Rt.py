@@ -444,15 +444,47 @@ class Qbittorrent(object):
 
 
 class Deluge(object):
+    version = "1.3.15"
     def __init__(self):
+        self.installDependency()
+        self.installDeluge()
+        self.startDeluge()
+        self.openPort()
         return
 
+    def installDependency(self):
+        subprocess.check_call(
+            "yum install epel-release -y", shell = True)
+        subprocess.check_call(
+            "yum install python python-twisted-core python-twisted-web pyOpenSSL \
+            python-setuptools gettext intltool pyxdg python-chardet python-GeoIP \
+            rb_libtorrent-python2 python-setproctitle python-pillow python-mako -y", shell = True)
+        return
+
+    def downloadSource(self):
+        os.chdir("/root")
+        subprocess.check_call(
+            "wget http://download.deluge-torrent.org/source/deluge-" + Deluge.version + ".tar.gz")
+        subprocess.check_call("tar xf deluge-" + Deluge.version + ".tar.gz")
+
     def installDeluge(self):
+        os.chdir("/root/deluge-" + Deluge.version)
+        subprocess.check_call("python setup.py build", shell = True)
+        subprocess.check_call("python setup.py install", shell = True)
+        return
+    
+    def startDeluge(self):
+        subprocess.check_call(
+            "deluged", shell = True)
+        subprocess.check_call(
+            "deluge-web -f", shell = True)
+
+    def openPort(self):
+        subprocess.check_call(
+            "iptables -I INPUT -p tcp --dport 8112 -j ACCEPT", shell=True)
         return
 
 #ServerSpeeder and BBR
-
-
 class SpeederBBR(object):
     def __init__(self):
         return
