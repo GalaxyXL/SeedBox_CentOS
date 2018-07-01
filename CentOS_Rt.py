@@ -1,18 +1,38 @@
 #CentOS 7.2 Integrate rtorrent installation
 import os
+import getopt
+import platform
 import subprocess
 
 httpfolder = "/usr/share/nginx/html/"
 rtorrentuser = "rtuser"
-password = "user_input"
+password = "123456"
+
+#Rtorrent Enviroment
 new_env = os.environ.copy()
 new_env['PKG_CONFIG_PATH'] = "/usr/local/lib/pkgconfig"
 
+class SysRelated(object):
+    def __init__(self):
+        return
+    
+    def checkSystem(self):
+        distribution = platform.linux_distribution()
+        if "CentOS" not in distribution:
+            print distribution[0] + "\nWrong System"
+            exit(1)
+        return
+
 #Install dependency of rtorrent
-class DependencyInstall(object):
+class Rtorrent(object):
     #Initial function
     def __init__(self):
         self.installSystemDependency()
+        self.getSourceCode()
+        self.compileSource()
+        self.getConfig()
+        self.startRtorrent()
+        self.installRutorrent()
         return
 
     #system dependency installation
@@ -22,11 +42,9 @@ class DependencyInstall(object):
         "gawk", "libsigc++20-devel", "openssl-devel", "ncurses-devel", "libcurl-devel", \
         "xmlrpc-c-devel", "unzip", "screen"], shell = False)
         return
-    
-#Get source code frome Github
-class GitCloneSourceCode(object):
+
     #Initial function
-    def __init__(self):
+    def getSourceCode(self):
         self.getLibtorrent()
         self.getRtorrent()
         return
@@ -49,13 +67,14 @@ class GitCloneSourceCode(object):
             exit(1)
         return
 
-#Configure and Compile libtorrent
-class ConfigureAndCompileLibtorrent(object):
-    #Initial function
-    def __init__(self):
+    def compileSource(self):
         self.goToLibtorrentDirectory()
-        self.configureMakefile()
+        self.configureLibtorrent()
         self.compileLibtorrent()
+        self.goToRtorrentDirectory()
+        self.configureRtorrent()
+        self.compileLibtorrent()
+
         return
 
     #Go to libtorrent directory
@@ -65,7 +84,7 @@ class ConfigureAndCompileLibtorrent(object):
         return
         
     #Configure Makefile
-    def configureMakefile(self):
+    def configureLibtorrent(self):
         #autogen and check
         output1 = subprocess.check_output(["/root/libtorrent/autogen.sh"]).decode('utf-8')
         if "ready to configure" not in output1:
@@ -82,7 +101,7 @@ class ConfigureAndCompileLibtorrent(object):
     #Compile libtorrent
     def compileLibtorrent(self):
         #Compile and check
-        output3 = subprocess.check_output("make", shell = True).decode('utf-8')
+        output3 = subprocess.check_output("make -j$(nproc)", shell = True).decode('utf-8')
         if "Error" in output3:
             print "Compilation error"
             exit(1)
@@ -93,16 +112,13 @@ class ConfigureAndCompileLibtorrent(object):
         p4 = os.chdir("/root")
         return
 
-#Configure and Compile rbtorrent
-class ConfigureAndCompileRtorrent(ConfigureAndCompileLibtorrent):
-    #Rewrite the method of go to
-    def goToLibtorrentDirectory(self):
+    def goToRtorrentDirectory(self):
         #Go to the rtorrent directory
         os.chdir("/root/rtorrent")
         return
 
     #Configure Makefile
-    def configureMakefile(self):
+    def configureRtorrent(self):
         #autogen and check
         output1 = subprocess.check_output(["/root/rtorrent/autogen.sh"]).decode('utf-8')
         if "ready to configure" not in output1:
@@ -112,6 +128,18 @@ class ConfigureAndCompileRtorrent(ConfigureAndCompileLibtorrent):
         output2 = subprocess.check_output(["/root/rtorrent/configure", "--with-xmlrpc-c", "--with-ncurses", "--enable-ipv6", "--disable-debug"], env = new_env).decode('utf-8')
         if "executing depfiles commands" not in output2:
             exit(2)
+        return
+
+    def getConfig(self):
+        RtorrentConfig()
+        return
+
+    def startRtorrent(self):
+        p0 = subprocess.check_call("sudo -u " + rtorrentuser + " screen -dmS rtorrent /usr/local/bin/rtorrent", shell = True)
+        return
+
+    def installRutorrent(self):
+        Rutorrent()
         return
 
 #Rtorrent Installation and running verification
@@ -184,21 +212,9 @@ class RtorrentConfig(object):
         p0 = subprocess.check_call("iptables -I INPUT -p tcp --dport 53698 -j ACCEPT", shell = True)
         p0 = subprocess.check_call("iptables -I INPUT -p tcp --dport 80 -j ACCEPT", shell = True)
         return
-
-#Start rtorrent under rtuser
-class RunningRtorrent(object):
-    #Initial function
-    def __init__(self):
-        self.startRtorrent()
-        return
-    
-    #Start rtorrent under rtuser
-    def startRtorrent(self):
-        p0 = subprocess.check_call("sudo -u " + rtorrentuser + " screen -dmS rtorrent /usr/local/bin/rtorrent", shell = True)
-        return
     
 #Install Nginx and related dependency and set config file
-class NginxInstallationAndConfig(object):
+class Rutorrent(object):
     #Initial function
     def __init__(self):
         self.installNginx()
@@ -289,12 +305,13 @@ class NginxInstallationAndConfig(object):
             print "Rutorrent plugin install error"
         return
 
-class installQbittorrent(object):
+#Qbittorrent installation related
+class Qbittorrent(object):
     def __init__(self):
         os.chdir("/root")
-        #self.installDependency()
-        #self.getLibtorrentRasterbar()
-        #self.configureLibtorrentRasterbar()
+        self.installDependency()
+        self.getLibtorrentRasterbar()
+        self.configureLibtorrentRasterbar()
         self.getQbittorrent()
         self.configureQbittorrent()
         self.openPort()
@@ -353,11 +370,27 @@ class installQbittorrent(object):
         subprocess.check_call("iptables -I INPUT -p tcp --dport 8999 -j ACCEPT", shell = True)
         return
             
+#ServerSpeeder and BBR
+class SpeederBBR(object):
+    def __init__(self):
+        return
 
+    def checkKernel(self):
+        return
+
+    def changeKernel(self):
+        return
+    
+    def installServerSpeeder(self):
+        return
+
+    def installBBR(self):
+        return
 
 
 def main():
-    installQbittorrent()
+    Rtorrent()
+    Qbittorrent()
 
 if __name__ == "__main__": main()
 
