@@ -1,5 +1,6 @@
 # CentOS 7.2 Integrate rtorrent installation
 import os
+import time
 import getopt
 import urllib2
 import platform
@@ -22,6 +23,7 @@ class SysRelated(object):
     def __init__(self):
         self.checkSystem()
         self.checkSysVersion()
+        #self.checkRoot()
         return
 
     # System check
@@ -45,11 +47,19 @@ class SysRelated(object):
         exit(1)
         return
 
+    # #Root check
+    # @staticmethod
+    # def checkRoot():
+    #     uid = os.geteuid()
+    #     if uid != 0:
+    #         print "You need root permissions to run this script"
+    #         exit(1)
+    #     return
 
 # Install dependency of rtorrent
 class Rtorrent(object):
     # Initial function
-    def __init__(self):
+    def __init__(self, lversion = "0.13.6", rversion = "0.9.6"):
         self.installSystemDependency()
         self.getSourceCode()
         self.compileSource()
@@ -175,8 +185,6 @@ class Rtorrent(object):
         return
 
 # Rtorrent Installation and running verification
-
-
 class RtorrentRunningVerification(object):
     # Initial function
     def __init__(self):
@@ -203,8 +211,6 @@ class RtorrentRunningVerification(object):
         return
 
 # Get config file for rtorrent
-
-
 class RtorrentConfig(object):
     # Initial funcition
     def __init__(self):
@@ -256,8 +262,6 @@ class RtorrentConfig(object):
         return
 
 # Install Nginx and related dependency and set config file
-
-
 class Rutorrent(object):
     # Initial function
     def __init__(self):
@@ -364,10 +368,9 @@ class Rutorrent(object):
         return
 
 # Qbittorrent installation related
-
-
 class Qbittorrent(object):
-    def __init__(self):
+    def __init__(self, version = "4.0.4"):
+        self.version = version
         os.chdir("/root")
         self.installDependency()
         self.getLibtorrentRasterbar()
@@ -415,15 +418,15 @@ class Qbittorrent(object):
     def getQbittorrent(self):
         try:
             subprocess.check_call(
-                "wget https://github.com/qbittorrent/qBittorrent/archive/release-4.0.4.tar.gz", shell=True)
-            subprocess.check_call("tar xf release-4.0.4.tar.gz", shell=True)
+                "wget https://github.com/qbittorrent/qBittorrent/archive/release-" + self.version + ".tar.gz", shell=True)
+            subprocess.check_call("tar xf release-" + self.version + ".tar.gz", shell=True)
         except:
             print "Get Qbittorrent error"
         return
 
     # Configure and compile qbittorrent
     def configureQbittorrent(self):
-        os.chdir("qBittorrent-release-4.0.4")
+        os.chdir("qBittorrent-release-" + self.version)
         os.system(
             "./configure --disable-debug --prefix=/usr --disable-gui CPPFLAGS=-I/usr/include/qt5  CXXFLAGS=-std=c++11")
         os.system("make")
@@ -441,12 +444,11 @@ class Qbittorrent(object):
         return
 
 # Deluge installation related
-
-
 class Deluge(object):
-    version = "1.3.15"
-    def __init__(self):
+    def __init__(self, version = "1.3.15"):
+        self.version = version
         self.installDependency()
+        self.downloadSource()
         self.installDeluge()
         self.startDeluge()
         self.openPort()
@@ -464,11 +466,11 @@ class Deluge(object):
     def downloadSource(self):
         os.chdir("/root")
         subprocess.check_call(
-            "wget http://download.deluge-torrent.org/source/deluge-" + Deluge.version + ".tar.gz")
-        subprocess.check_call("tar xf deluge-" + Deluge.version + ".tar.gz")
+            "wget http://download.deluge-torrent.org/source/deluge-" + self.version + ".tar.gz", shell = True)
+        subprocess.check_call("tar xf deluge-" + self.version + ".tar.gz", shell = True)
 
     def installDeluge(self):
-        os.chdir("/root/deluge-" + Deluge.version)
+        os.chdir("/root/deluge-" + self.version)
         subprocess.check_call("python setup.py build", shell = True)
         subprocess.check_call("python setup.py install", shell = True)
         return
@@ -484,8 +486,9 @@ class Deluge(object):
             "iptables -I INPUT -p tcp --dport 8112 -j ACCEPT", shell=True)
         return
 
-#ServerSpeeder and BBR
+# ServerSpeeder and BBR
 class SpeederBBR(object):
+    #Unfinish
     def __init__(self):
         return
 
@@ -554,10 +557,65 @@ class SpeederBBR(object):
             exit(1)
         return
 
+class ArgvHandler(object):
+    def __init__(self):
+        return
+
+class ShellInterfaceHandler(object):
+    def __init__(self):
+        self.showMenu()
+        return
+
+    def showMenu(self):
+        while True:
+            print "1.Install Deluge"
+            print "2.Install Qbittorrent"
+            print "3.Install Rtorrent and Rutorrent"
+            print "4.Install QB(4.0.4) RT(0.9.6/0.13.6) DE(1.3.15)"
+            print "0.Exit"
+            self.option = raw_input("Please input your options: ")
+            self.processInput(int(self.option))
+
+    def processInput(self, option = 4):
+        if option == 0:
+            exit(0)
+        if option == 1:
+            version = raw_input("Please input the version you want to install[1.3.15]: ")
+            if version.strip() == "":
+                Deluge("1.3.15")
+            else:
+                Deluge(version)
+
+        elif option == 2:
+            version == raw_input("Please input the version you want to install[4.0.4]: ")
+            if version.strip() == "":
+                Qbittorrent("4.0.4")
+            else:
+                Qbittorrent(version)
+        
+        elif option == 3:
+            Rtorrent()
+
+        elif option == 4:
+            Deluge()
+            Qbittorrent()
+            Rtorrent()
+
+        else:
+            print "Invalid input."
+            return
+
+        print "Installation complete.\nPlease start qbittorrent-nox mannully\nexit program..."
+        time.sleep(5)
+        exit(0)
+        return
+
+            
 
 def main():
-    Rtorrent()
-    Qbittorrent()
+    SysRelated()
+    ShellInterfaceHandler()
+
 
 
 if __name__ == "__main__":
