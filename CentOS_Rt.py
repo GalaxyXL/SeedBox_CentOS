@@ -1,16 +1,16 @@
 # CentOS 7.2 Integrate rtorrent installation
 import os
 import time
-import getopt
+import random
+import string
 import urllib2
 import platform
+import argparse
 import subprocess
 
 httpfolder = "/usr/share/nginx/html/"
-rtorrentuser = "rtuser"
-password = "123456"
-
-flag = 0
+rtorrentuser = ""
+password = ""
 
 # Rtorrent Enviroment
 new_env = os.environ.copy()
@@ -60,8 +60,10 @@ class SysRelated(object):
 class Rtorrent(object):
     # Initial function
     def __init__(self, lversion = "0.13.6", rversion = "0.9.6"):
+        self.lversion = lversion
+        self.rversion = rversion
         self.installSystemDependency()
-        self.getSourceCode()
+        self.getSourceCode(lversion, rversion)
         self.compileSource()
         self.getConfig()
         self.startRtorrent()
@@ -78,26 +80,32 @@ class Rtorrent(object):
         return
 
     # Initial function
-    def getSourceCode(self):
-        self.getLibtorrent()
-        self.getRtorrent()
+    def getSourceCode(self, lversion, rversion):
+        self.getLibtorrent(lversion)
+        self.getRtorrent(rversion)
         return
 
     # Get libtorrent from Github
-    def getLibtorrent(self):
+    def getLibtorrent(self, lversion):
         try:
+            os.chdir("/root")
             p1 = subprocess.check_call(
-                ["git", "clone", "https://github.com/rakshasa/libtorrent"], shell=False)
+                "wget https://github.com/rakshasa/libtorrent/archive/" + lversion + ".tar.gz", shell=True)
+            subprocess.check_call(
+                "tar xf " + lversion + ".tar.gz", shell = True)
         except:
             print "Get libtorrent error"
             exit(1)
         return
 
     # Get rtorrent from Github
-    def getRtorrent(self):
+    def getRtorrent(self, rversion):
         try:
+            os.chdir("/root")
             p1 = subprocess.check_call(
-                ["git", "clone", "https://github.com/rakshasa/rtorrent"], shell=False)
+                "wget https://github.com/rakshasa/rtorrent/archive/" + rversion + ".tar.gz", shell=True)
+            subprocess.check_call(
+                "tar xf" + rversion + ".tar.gz", shell = True)
         except:
             print "Get rtorrent error"
             exit(1)
@@ -116,7 +124,7 @@ class Rtorrent(object):
     # Go to libtorrent directory
     def goToLibtorrentDirectory(self):
         # Go to the libtorrent source code directory
-        os.chdir("/root/libtorrent")
+        os.chdir("/root/libtorrent-" + self.lversion)
         return
 
     # Configure Makefile
@@ -153,7 +161,7 @@ class Rtorrent(object):
 
     def goToRtorrentDirectory(self):
         # Go to the rtorrent directory
-        os.chdir("/root/rtorrent")
+        os.chdir("/root/rtorrent-" + self.rversion)
         return
 
     # Configure Makefile
@@ -558,7 +566,61 @@ class SpeederBBR(object):
         return
 
 class ArgvHandler(object):
+    parser = argparse.ArgumentParser(description="CentOS 7 Seedbox Easy Installation Script")
+
     def __init__(self):
+        ArgvHandler.addUsername()
+        ArgvHandler.addPassword()
+        ArgvHandler.addQbittorrentArg()
+        ArgvHandler.addDelugeArg()
+        ArgvHandler.addRtorrentArg()
+        ArgvHandler.parser.parse_args()
+
+        global password, username
+        password = ArgvHandler.getArgv().password
+        username = ArgvHandler.getArgv().username
+        return
+
+    @classmethod
+    def getArgv(cls):
+        return ArgvHandler.parser.parse_args()
+
+    @classmethod
+    def addPassword(cls):
+        cls.parser.add_argument(
+            "-p", "--password", nargs = "?", const = ''.join(random.sample(string.ascii_letters + string.digits, 16)), action = "store", 
+            dest = "password")
+        return
+
+    @classmethod
+    def addUsername(cls):
+        cls.parser.add_argument(
+            "-u", "--username", nargs = "?", const = platform.node(), action = "store", 
+            dest = "username")
+        return
+
+    @classmethod
+    def addQbittorrentArg(cls):
+        cls.parser.add_argument(
+            "-q", "--qbittorrent", nargs = "?", const = "4.0.4", action = "store", help = "Enable Qbittorrent installation", 
+            dest = "qbver")
+        return
+
+    @classmethod
+    def addDelugeArg(cls):
+        cls.parser.add_argument(
+            "-d", "--deluge", nargs = "?", const = "1.3.15", action = "store", help = "Enable Deluge installation", 
+            dest = "dever")
+        return
+
+    @classmethod
+    def addRtorrentArg(cls):
+        cls.parser.add_argument(
+            "-r", "--rtorrent", nargs = "?", const = "0.9.6", action = "store", help = "Enable Rtorrent and Rutorrent installation", 
+            dest = "rtver")
+
+    @classmethod
+    def dealArgv(cls):
         return
 
 class ShellInterfaceHandler(object):
@@ -567,6 +629,11 @@ class ShellInterfaceHandler(object):
         return
 
     def showMenu(self):
+        for value in ArgvHandler.getArgv().__dict__.values():
+            if value:
+                ArgvHandler.dealArgv()
+                return
+
         while True:
             print "1.Install Deluge"
             print "2.Install Qbittorrent"
@@ -587,14 +654,20 @@ class ShellInterfaceHandler(object):
                 Deluge(version)
 
         elif option == 2:
-            version == raw_input("Please input the version you want to install[4.0.4]: ")
+            version = raw_input("Please input the version you want to install[4.0.4]: ")
             if version.strip() == "":
                 Qbittorrent("4.0.4")
             else:
                 Qbittorrent(version)
         
         elif option == 3:
-            Rtorrent()
+            rversion = raw_input("Please input the rtorrent version you want to install[0.9.6]: ")
+            if version.strip() == "":
+                Rtorrent()
+            else:
+                libversions = rversion.split(".")
+                libversion = "0.13." + libversions[:-1]
+                Rtorrent(rversion, libversion)
 
         elif option == 4:
             Deluge()
@@ -610,9 +683,13 @@ class ShellInterfaceHandler(object):
         exit(0)
         return
 
+    def showInstallationInfo(self):
+        return
+
             
 
 def main():
+    ArgvHandler()
     SysRelated()
     ShellInterfaceHandler()
 
